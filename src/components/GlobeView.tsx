@@ -792,7 +792,7 @@ const GlobeView: React.FC<GlobeViewProps> = ({ selectedProject, onShowSearchResu
   return (
     <div className="min-h-screen bg-marine-blue relative overflow-x-hidden">
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all ${globeFocused ? 'filter blur-sm pointer-events-none' : ''}`}>
-  <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 pb-3 sm:pb-4">
+  <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 pb-3 sm:pb-4 relative">
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       
       {/* 1. Left Section (Wrapper) */}
@@ -888,26 +888,28 @@ const GlobeView: React.FC<GlobeViewProps> = ({ selectedProject, onShowSearchResu
 
       {/* Mobile dropdown for right actions */}
       {navMenuOpen && (
-        <div className="sm:hidden mt-2 space-y-2">
-          <button
-            onClick={() => {
-              setNavMenuOpen(false);
-              setShowQueryHistory(!showQueryHistory);
-              if (!showQueryHistory) loadQueryHistory();
-            }}
-            className="w-full flex items-center justify-between px-3 py-2 bg-white/15 border border-white/20 rounded-lg text-white text-sm"
-          >
-            <span>Query History</span>
-            <FiClock className="w-4 h-4" />
-          </button>
-          <a
-            href="https://analytics.nikare.in"
-            target="_blank"
-            className="w-full flex items-center justify-between px-3 py-2 bg-white/15 border border-white/20 rounded-lg text-white text-sm"
-          >
-            <span>Data PlayGround</span>
-            <FiDatabase className="w-4 h-4" />
-          </a>
+        <div className="sm:hidden absolute left-0 right-0 top-full mt-2 px-3">
+          <div className="rounded-xl border border-white/15 bg-marine-blue/95 shadow-2xl shadow-black/40 backdrop-blur-md overflow-hidden divide-y divide-white/10">
+            <button
+              onClick={() => {
+                setNavMenuOpen(false);
+                setShowQueryHistory(!showQueryHistory);
+                if (!showQueryHistory) loadQueryHistory();
+              }}
+              className="w-full flex items-center justify-between px-4 py-3 text-white text-sm hover:bg-white/8 transition-colors"
+            >
+              <span>Query History</span>
+              <FiClock className="w-4 h-4" />
+            </button>
+            <a
+              href="https://analytics.nikare.in"
+              target="_blank"
+              className="w-full flex items-center justify-between px-4 py-3 text-white text-sm hover:bg-white/8 transition-colors"
+            >
+              <span>Data PlayGround</span>
+              <FiDatabase className="w-4 h-4" />
+            </a>
+          </div>
         </div>
       )}
 

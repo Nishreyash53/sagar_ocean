@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, Suspense } from 'react';
 import ReactDOM from 'react-dom';
 import { motion } from 'framer-motion';
-import { FiArrowLeft, FiFilter, FiPlus, FiActivity, FiTrendingUp, FiSearch, FiX, FiClock, FiDatabase, FiFileText, FiEdit2, FiTrash2, FiSave, FiPenTool } from 'react-icons/fi';
+import { FiArrowLeft, FiFilter, FiPlus, FiActivity, FiTrendingUp, FiSearch, FiX, FiClock, FiDatabase, FiFileText, FiEdit2, FiTrash2, FiSave, FiPenTool, FiMenu } from 'react-icons/fi';
 import { Project, DataPoint } from '../App';
 import ReactGlobeComponent from './ReactGlobeComponent';
 import { Card, CardTitle, CardDescription, CardSkeletonContainer } from './ui/aceternityCards';
@@ -67,6 +67,9 @@ const GlobeView: React.FC<GlobeViewProps> = ({ selectedProject, onShowSearchResu
   const [panelNoteTitle, setPanelNoteTitle] = useState('');
   const [panelNoteContent, setPanelNoteContent] = useState('');
   const [savingPanelNote, setSavingPanelNote] = useState(false);
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [showFiltersDrawer, setShowFiltersDrawer] = useState(false);
+  const [showChartsDrawer, setShowChartsDrawer] = useState(false);
 
   const loadQueryHistory = async () => {
     setIsLoadingHistory(true);
@@ -787,36 +790,61 @@ const GlobeView: React.FC<GlobeViewProps> = ({ selectedProject, onShowSearchResu
   };
 
   return (
-    <div className="min-h-screen bg-marine-blue relative overflow-visible">
+    <div className="min-h-screen bg-marine-blue relative overflow-x-hidden">
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all ${globeFocused ? 'filter blur-sm pointer-events-none' : ''}`}>
-  <div className="px-6 py-4">
-    <div className="flex items-center justify-between">
+  <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 pb-3 sm:pb-4">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       
       {/* 1. Left Section (Wrapper) */}
-      <div className="flex-1 flex justify-start">
+      <div className="flex justify-between items-center sm:flex-1 sm:justify-start">
         <motion.button
           onClick={() => window.dispatchEvent(new Event('backToProjects'))}
-          className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl backdrop-blur-sm transition-all duration-200 text-white"
+          className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl backdrop-blur-sm transition-all duration-200 text-white text-sm sm:text-base"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
           <FiArrowLeft className="w-4 h-4" />
           <span>Back to Projects</span>
         </motion.button>
+
+        {/* Mobile nav menu button */}
+        <button
+          onClick={() => setNavMenuOpen(!navMenuOpen)}
+          className="sm:hidden ml-2 p-2 rounded-lg bg-white/15 border border-white/20 text-white"
+          aria-label="Open menu"
+        >
+          <FiMenu className="w-5 h-5" />
+        </button>
       </div>
 
       {/* 2. Center Content */}
-      <div className="text-center">
-        <h1 className="text-xl font-bold text-white">
+      <div className="text-center px-1 w-full sm:w-auto">
+        <h1 className="text-lg sm:text-xl font-bold text-white break-words">
           {selectedProject?.title ?? 'Arabian Sea Plankton Study'}
         </h1>
-        <div className="mt-2 flex justify-center">
-          <div className="inline-flex bg-white/15 border border-white/25 rounded-xl overflow-hidden backdrop-blur-sm">
+        {/* Mobile mode selector */}
+        <div className="mt-2 sm:hidden px-6">
+          <select
+            value={activeMode}
+            onChange={(e) => setActiveMode(e.target.value as typeof activeMode)}
+            className="w-full bg-white/10 border border-white/25 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-marine-cyan"
+          >
+            {(['Analyse', 'Visualise', 'Study'] as const).map(mode => (
+              <option key={mode} value={mode} className="bg-marine-blue text-white">
+                {mode}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Desktop / tablet mode tabs */}
+        <div className="mt-2 hidden sm:flex justify-center">
+          <div className="inline-flex bg-white/15 border border-white/25 rounded-xl overflow-hidden backdrop-blur-sm max-w-full overflow-x-auto">
             {(['Analyse', 'Visualise', 'Study'] as const).map((mode, idx) => (
               <button
                 key={mode}
                 onClick={() => setActiveMode(mode)}
-                className={`px-4 py-2 text-sm transition-colors ${
+                className={`px-3 sm:px-4 py-2 text-xs sm:text-sm transition-colors ${
                   activeMode === mode
                     ? 'bg-white/30 text-white font-semibold'
                     : 'text-white/80 hover:bg-white/20'
@@ -832,7 +860,7 @@ const GlobeView: React.FC<GlobeViewProps> = ({ selectedProject, onShowSearchResu
       </div>
 
       {/* 3. Right Section (Wrapper) */}
-      <div className="flex-1 flex justify-end items-center space-x-3">
+      <div className="hidden sm:flex flex-1 justify-end items-center space-x-3">
         <motion.button
           onClick={() => {
             setShowQueryHistory(!showQueryHistory);
@@ -858,519 +886,481 @@ const GlobeView: React.FC<GlobeViewProps> = ({ selectedProject, onShowSearchResu
         </motion.a>
       </div>
 
+      {/* Mobile dropdown for right actions */}
+      {navMenuOpen && (
+        <div className="sm:hidden mt-2 space-y-2">
+          <button
+            onClick={() => {
+              setNavMenuOpen(false);
+              setShowQueryHistory(!showQueryHistory);
+              if (!showQueryHistory) loadQueryHistory();
+            }}
+            className="w-full flex items-center justify-between px-3 py-2 bg-white/15 border border-white/20 rounded-lg text-white text-sm"
+          >
+            <span>Query History</span>
+            <FiClock className="w-4 h-4" />
+          </button>
+          <a
+            href="https://analytics.nikare.in"
+            target="_blank"
+            className="w-full flex items-center justify-between px-3 py-2 bg-white/15 border border-white/20 rounded-lg text-white text-sm"
+          >
+            <span>Data PlayGround</span>
+            <FiDatabase className="w-4 h-4" />
+          </a>
+        </div>
+      )}
+
     </div>
   </div>
 </header>
 
       {activeMode === 'Analyse' ? (
-      <div className="relative pt-16 sm:pt-20 h-screen flex flex-col lg:flex-row">
-        {/* Floating left sidebar container without solid background */}
-        <motion.div 
-          className={`w-full lg:w-80 backdrop-blur-md border border-white/20 rounded-lg sm:rounded-2xl shadow-2xl shadow-black/20 m-2 sm:m-4 p-3 sm:p-4 md:p-6 overflow-y-auto scrollbar-hide z-20 transition-all ${globeFocused ? 'filter blur-md pointer-events-none' : ''} lg:max-h-[calc(100vh-5rem)]`}
-          initial={{ x: -320 }}
-          animate={{ x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="space-y-6">
-            {/* Project blurb */}
-            <div className="text-white/80 text-sm">
-              {selectedProject?.description ?? 'Select a project to view details.'}
-            </div>
+        <div className="relative pt-28 sm:pt-24 min-h-screen flex flex-col">
+          
+          {/* Filters Drawer */}
+          <div className={`fixed top-[68px] sm:top-[76px] left-0 w-full sm:w-[360px] max-w-full h-[calc(100vh-70px)] bg-black/75 backdrop-blur-xl border-r border-white/10 z-[60] transform transition-transform duration-300 ${showFiltersDrawer ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base sm:text-lg font-semibold text-white">Filters</h3>
+                <button onClick={() => setShowFiltersDrawer(false)} className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white">
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
 
-            {/* Active Data Layer */}
-            <div>
-              <h3 className="text-base sm:text-lg font-semibold text-white mb-2">Active Data Layer</h3>
-              <select
-                value={dataLayer}
-                onChange={(e) => setDataLayer(e.target.value as typeof dataLayer)}
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white/10 border border-white/20 rounded-lg sm:rounded-xl text-white focus:border-marine-cyan focus:outline-none backdrop-blur-sm text-sm sm:text-base"
-              >
-                <option>Species Occurrences</option>
-                <option>Sea Surface Temperature (SST)</option>
-                <option>Salinity</option>
-                <option>Chlorophyll Concentration</option>
-                <option>eDNA Detections</option>
-              </select>
-              {dataLayer !== 'Species Occurrences' && (
-                <p className="mt-2 text-xs text-white/70">Placeholder layer for future integration.</p>
-              )}
-            </div>
+              <div className="text-white/80 text-sm">
+                {selectedProject?.description ?? 'Select a project to view details.'}
+              </div>
 
-            {/* Dynamic Filters */}
-            <div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
-                <h4 className="text-xs sm:text-sm font-semibold text-white">Active Filters</h4>
-                <motion.button
-                  className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-white/10 border border-white/20 rounded text-white/90 hover:bg-white/20 transition-all duration-200 backdrop-blur-sm text-xs sm:text-sm"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    if (newSpecies) {
-                      setActiveFilters(prev => [...prev, { type: 'species', value: newSpecies }]);
-                      setNewSpecies('');
-                      return;
-                    }
-                    if (newWaterBody) {
-                      setActiveFilters(prev => [...prev, { type: 'waterBody', value: newWaterBody }]);
-                      setNewWaterBody('');
-                      return;
-                    }
-                    if (newLocality) {
-                      setActiveFilters(prev => [...prev, { type: 'locality', value: newLocality }]);
-                      setNewLocality('');
-                      return;
-                    }
-                    if (methods.length) {
-                      setActiveFilters(prev => [...prev, { type: 'method', values: methods }]);
-                      setMethods([]);
-                      return;
-                    }
-                    if (dateStart || dateEnd) {
-                      setActiveFilters(prev => [...prev, { type: 'date', start: dateStart, end: dateEnd }]);
-                      setDateStart('');
-                      setDateEnd('');
-                      return;
-                    }
-                    setActiveFilters(prev => [...prev, { type: 'depth', min: depthMin, max: depthMax }]);
-                  }}
+              {/* Active Data Layer */}
+              <div>
+                <h3 className="text-sm sm:text-base font-semibold text-white mb-2">Active Data Layer</h3>
+                <select
+                  value={dataLayer}
+                  onChange={(e) => setDataLayer(e.target.value as typeof dataLayer)}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-white/10 border border-white/20 rounded-lg sm:rounded-xl text-white focus:border-marine-cyan focus:outline-none backdrop-blur-sm text-sm sm:text-base"
                 >
-                  <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="text-xs sm:text-sm">Create New Filter</span>
-                </motion.button>
+                  <option>Species Occurrences</option>
+                  <option>Sea Surface Temperature (SST)</option>
+                  <option>Salinity</option>
+                  <option>Chlorophyll Concentration</option>
+                  <option>eDNA Detections</option>
+                </select>
+                {dataLayer !== 'Species Occurrences' && (
+                  <p className="mt-2 text-xs text-white/70">Placeholder layer for future integration.</p>
+                )}
               </div>
 
-              <div className="space-y-2 sm:space-y-3">
-                <div>
-                  <label className="block text-xs text-white/70 mb-1">Species Name</label>
-                  <input list="species-list" value={newSpecies} onChange={(e) => setNewSpecies(e.target.value)} placeholder="e.g., Harpiliopsis depressa" className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-white/10 border border-white/20 rounded text-white text-xs sm:text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
-                  <datalist id="species-list">
-                    {uniqueSpecies.slice(0, 100).map(name => (
-                      <option key={name} value={name} />
-                    ))}
-                  </datalist>
+              {/* Dynamic Filters */}
+              <div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
+                  <h4 className="text-xs sm:text-sm font-semibold text-white">Active Filters</h4>
+                  <motion.button
+                    className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-white/10 border border-white/20 rounded text-white/90 hover:bg-white/20 transition-all duration-200 backdrop-blur-sm text-xs sm:text-sm"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      if (newSpecies) {
+                        setActiveFilters(prev => [...prev, { type: 'species', value: newSpecies }]);
+                        setNewSpecies('');
+                        return;
+                      }
+                      if (newWaterBody) {
+                        setActiveFilters(prev => [...prev, { type: 'waterBody', value: newWaterBody }]);
+                        setNewWaterBody('');
+                        return;
+                      }
+                      if (newLocality) {
+                        setActiveFilters(prev => [...prev, { type: 'locality', value: newLocality }]);
+                        setNewLocality('');
+                        return;
+                      }
+                      if (methods.length) {
+                        setActiveFilters(prev => [...prev, { type: 'method', values: methods }]);
+                        setMethods([]);
+                        return;
+                      }
+                      if (dateStart || dateEnd) {
+                        setActiveFilters(prev => [...prev, { type: 'date', start: dateStart, end: dateEnd }]);
+                        setDateStart('');
+                        setDateEnd('');
+                        return;
+                      }
+                      setActiveFilters(prev => [...prev, { type: 'depth', min: depthMin, max: depthMax }]);
+                    }}
+                  >
+                    <FiPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm">Create New Filter</span>
+                  </motion.button>
                 </div>
-                <div>
-                  <label className="block text-xs text-white/70 mb-1">Water Body</label>
-                  <select value={newWaterBody} onChange={(e) => setNewWaterBody(e.target.value)} className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm">
-                    <option value="">Select water body</option>
-                    {uniqueWaterBodies.map(w => <option key={w} value={w}>{w}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-white/70 mb-1">Location (Locality)</label>
-                  <select value={newLocality} onChange={(e) => setNewLocality(e.target.value)} className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm">
-                    <option value="">Select locality</option>
-                    {uniqueLocalities.slice(0, 200).map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-white/70 mb-1">Depth Range (m)</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="number" value={depthMin} onChange={(e) => setDepthMin(Number(e.target.value))} placeholder="Min" className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
-                    <input type="number" value={depthMax} onChange={(e) => setDepthMax(Number(e.target.value))} placeholder="Max" className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs text-white/70 mb-1">Date Range</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
-                    <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs text-white/70 mb-1">Collection Method</label>
-                  <select multiple value={methods} onChange={(e) => setMethods(Array.from(e.target.selectedOptions).map(o => o.value))} className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none min-h-[80px] backdrop-blur-sm">
-                    {uniqueMethods.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                </div>
-              </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {activeFilters.map((f, idx) => (
-                  <span key={`${f.type}-${idx}`} className="inline-flex items-center space-x-2 px-2 py-1 bg-white/10 border border-white/20 rounded text-xs text-white/90 backdrop-blur-sm">
-                    <span>
-                      {f.type === 'species' && `Species IS ${f.value}`}
-                      {f.type === 'waterBody' && `Water Body IS ${f.value}`}
-                      {f.type === 'locality' && `Locality IS ${f.value}`}
-                      {f.type === 'depth' && `Depth IS BETWEEN ${f.min}m AND ${f.max}m`}
-                      {f.type === 'date' && `Date BETWEEN ${f.start || '...'} AND ${f.end || '...'}`}
-                      {f.type === 'method' && `Method IS ${f.values.join(', ')}`}
+                <div className="space-y-2 sm:space-y-3">
+                  <div>
+                    <label className="block text-xs text-white/70 mb-1">Species Name</label>
+                    <input list="species-list" value={newSpecies} onChange={(e) => setNewSpecies(e.target.value)} placeholder="e.g., Harpiliopsis depressa" className="w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-white/10 border border-white/20 rounded text-white text-xs sm:text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
+                    <datalist id="species-list">
+                      {uniqueSpecies.slice(0, 100).map(name => (
+                        <option key={name} value={name} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/70 mb-1">Water Body</label>
+                    <select value={newWaterBody} onChange={(e) => setNewWaterBody(e.target.value)} className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm">
+                      <option value="">Select water body</option>
+                      {uniqueWaterBodies.map(w => <option key={w} value={w}>{w}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/70 mb-1">Location (Locality)</label>
+                    <select value={newLocality} onChange={(e) => setNewLocality(e.target.value)} className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm">
+                      <option value="">Select locality</option>
+                      {uniqueLocalities.slice(0, 200).map(l => <option key={l} value={l}>{l}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/70 mb-1">Depth Range (m)</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="number" value={depthMin} onChange={(e) => setDepthMin(Number(e.target.value))} placeholder="Min" className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
+                      <input type="number" value={depthMax} onChange={(e) => setDepthMax(Number(e.target.value))} placeholder="Max" className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/70 mb-1">Date Range</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
+                      <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none backdrop-blur-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/70 mb-1">Collection Method</label>
+                    <select multiple value={methods} onChange={(e) => setMethods(Array.from(e.target.selectedOptions).map(o => o.value))} className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm focus:border-marine-cyan focus:outline-none min-h-[80px] backdrop-blur-sm">
+                      {uniqueMethods.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {activeFilters.map((f, idx) => (
+                    <span key={`${f.type}-${idx}`} className="inline-flex items-center space-x-2 px-2 py-1 bg-white/10 border border-white/20 rounded text-xs text-white/90 backdrop-blur-sm">
+                      <span>
+                        {f.type === 'species' && `Species IS ${f.value}`}
+                        {f.type === 'waterBody' && `Water Body IS ${f.value}`}
+                        {f.type === 'locality' && `Locality IS ${f.value}`}
+                        {f.type === 'depth' && `Depth IS BETWEEN ${f.min}m AND ${f.max}m`}
+                        {f.type === 'date' && `Date BETWEEN ${f.start || '...'} AND ${f.end || '...'}`}
+                        {f.type === 'method' && `Method IS ${f.values.join(', ')}`}
+                      </span>
+                      <button onClick={() => setActiveFilters(prev => prev.filter((_, i) => i !== idx))} className="text-white/70 hover:text-white">
+                        <FiX className="w-3 h-3" />
+                      </button>
                     </span>
-                    <button onClick={() => setActiveFilters(prev => prev.filter((_, i) => i !== idx))} className="text-white/70 hover:text-white">
-                      <FiX className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* AI-Powered Analysis */}
-            <div>
-              <h4 className="text-sm font-medium text-white mb-3 flex items-center">
-                <FiTrendingUp className="w-4 h-4 mr-2" />
-                AI-Powered Analysis
-              </h4>
-              <div className="space-y-3">
-                {/* Data Type Selector (Optional) */}
-                <div>
-                  <label className="block text-xs text-white/70 mb-2">Data Types (Optional - Auto-detected if empty)</label>
-                  <div className="flex flex-wrap gap-2">
-                    {(['OCCURRENCE', 'CTD', 'AWS', 'ADCP'] as DataType[]).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => {
-                          setSelectedDataTypes(prev => 
-                            prev.includes(type) 
-                              ? prev.filter(t => t !== type)
-                              : [...prev, type]
-                          );
-                        }}
-                        className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
-                          selectedDataTypes.includes(type)
-                            ? 'bg-marine-cyan/40 border border-marine-cyan text-white'
-                            : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/15'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
+              {/* AI-Powered Analysis */}
+              <div>
+                <h4 className="text-sm font-medium text-white mb-3 flex items-center">
+                  <FiTrendingUp className="w-4 h-4 mr-2" />
+                  AI-Powered Analysis
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-white/70 mb-2">Data Types (Optional - Auto-detected if empty)</label>
+                    <div className="flex flex-wrap gap-2">
+                      {(['OCCURRENCE', 'CTD', 'AWS', 'ADCP'] as DataType[]).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDataTypes(prev => 
+                              prev.includes(type) 
+                                ? prev.filter(t => t !== type)
+                                : [...prev, type]
+                            );
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs transition-all ${
+                            selectedDataTypes.includes(type)
+                              ? 'bg-marine-cyan/40 border border-marine-cyan text-white'
+                              : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/15'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                      {selectedDataTypes.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDataTypes([])}
+                          className="px-2 py-1.5 rounded-lg text-xs bg-white/10 border border-white/20 text-white/70 hover:bg-white/15"
+                          title="Clear selection (auto-detect)"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                     {selectedDataTypes.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedDataTypes([])}
-                        className="px-2 py-1.5 rounded-lg text-xs bg-white/10 border border-white/20 text-white/70 hover:bg-white/15"
-                        title="Clear selection (auto-detect)"
-                      >
-                        Clear
-                      </button>
+                      <p className="mt-1 text-xs text-white/60">
+                        Searching: {selectedDataTypes.join(', ')}
+                      </p>
                     )}
                   </div>
-                  {selectedDataTypes.length > 0 && (
-                    <p className="mt-1 text-xs text-white/60">
-                      Searching: {selectedDataTypes.join(', ')}
-                    </p>
+                  <textarea
+                    value={analysisInput}
+                    onChange={(e) => setAnalysisInput(e.target.value)}
+                    placeholder="Ask a question about the data... (e.g., 'What species are found in the Arabian Sea?', 'Show CTD temperature profiles', 'What are the current speeds in the Indian Ocean?')"
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm resize-none focus:border-marine-cyan focus:outline-none backdrop-blur-sm"
+                    rows={3}
+                  />
+                  <motion.button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing || !analysisInput.trim()}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-marine-cyan/30 to-marine-green/30 border border-marine-cyan/50 rounded-xl text-white hover:from-marine-cyan/40 hover:to-marine-green/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 backdrop-blur-sm"
+                    whileHover={{ scale: isAnalyzing ? 1 : 1.02 }}
+                    whileTap={{ scale: isAnalyzing ? 1 : 0.98 }}
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-marine-cyan"></div>
+                        <span>Analyzing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiSearch className="w-4 h-4" />
+                        <span>Analyze</span>
+                      </>
+                    )}
+                  </motion.button>
+                  <div className="text-xs text-white/70 space-y-1">
+                    {analysisSteps.map((s, i) => (<div key={i}>• {s}</div>))}
+                  </div>
+                  {insight && (
+                    <div className="p-3 bg-white/10 border border-white/20 rounded-xl text-sm text-white/90 backdrop-blur-sm">
+                      {insight}
+                    </div>
                   )}
                 </div>
-                <textarea
+              </div>
+
+              {/* Live Feed */}
+              <div>
+                <h4 className="text-sm font-medium text-white mb-3 flex items-center">
+                  <FiActivity className="w-4 h-4 mr-2" />
+                  Live Reactions
+                </h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {liveFeedData.map((item, index) => (
+                    <motion.div
+                      key={index}
+                      className="p-2 bg-white/10 border border-white/20 rounded-xl text-xs text-white/90 backdrop-blur-sm"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      {item}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Drawer */}
+          <div className={`fixed top-[68px] sm:top-[76px] right-0 w-full sm:w-[360px] max-w-full h-[calc(100vh-70px)] bg-black/75 backdrop-blur-xl border-l border-white/10 z-[60] transform transition-transform duration-300 ${showChartsDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base sm:text-lg font-semibold text-white">Charts</h3>
+                <button onClick={() => setShowChartsDrawer(false)} className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white">
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+              {(() => {
+                const total = filteredData.length;
+                const uniqueSpeciesCount = new Set(filteredData.map(d => d.scientificName)).size;
+                const uniqueWaterBodiesCount = new Set(filteredData.map(d => d.waterBody).filter(Boolean)).size;
+                const dates = filteredData.map(d => new Date(d.eventDate).getTime()).filter(n => !isNaN(n));
+                const minDate = dates.length ? new Date(Math.min(...dates)).toLocaleDateString() : 'N/A';
+                const maxDate = dates.length ? new Date(Math.max(...dates)).toLocaleDateString() : 'N/A';
+                const depths = filteredData.map(d => [d.minimumDepthInMeters, d.maximumDepthInMeters]).flat().filter(n => typeof n === 'number' && !isNaN(n));
+                const minDepth = depths.length ? Math.min(...depths) : null;
+                const maxDepth = depths.length ? Math.max(...depths) : null;
+                return (
+                  <div className="space-y-3">
+                    <Card className="pointer-events-auto">
+                      <CardTitle>Total Occurrences</CardTitle>
+                      <CardDescription className="text-2xl font-semibold tracking-wide text-marine-cyan">{total}</CardDescription>
+                      <div className="mt-3 h-24">
+                        <SpeciesDistributionChart data={filteredData} />
+                      </div>
+                    </Card>
+                    <Card className="pointer-events-auto">
+                      <CardTitle>Unique Species</CardTitle>
+                      <CardDescription className="text-2xl font-semibold tracking-wide text-marine-cyan">{uniqueSpeciesCount}</CardDescription>
+                      <div className="mt-3 h-24">
+                        <TopSpeciesChart data={filteredData} />
+                      </div>
+                    </Card>
+                    <Card className="pointer-events-auto">
+                      <CardTitle>Water Bodies Covered</CardTitle>
+                      <CardDescription className="text-2xl font-semibold tracking-wide text-marine-cyan">{uniqueWaterBodiesCount}</CardDescription>
+                      <div className="mt-3 h-24">
+                        <WaterBodyDistributionChart data={filteredData} />
+                      </div>
+                    </Card>
+                    <Card className="pointer-events-auto">
+                      <CardTitle>Date Range</CardTitle>
+                      <CardDescription className="text-white/80">{minDate} — {maxDate}</CardDescription>
+                      <div className="mt-3 h-24">
+                        <TemporalDistributionChart data={filteredData} />
+                      </div>
+                    </Card>
+                    <Card className="pointer-events-auto">
+                      <CardTitle>Depth Range</CardTitle>
+                      <CardDescription className="text-white/80">{minDepth !== null && maxDepth !== null ? `${minDepth}m — ${maxDepth}m` : 'N/A'}</CardDescription>
+                      <div className="mt-3 h-24">
+                        <DepthDistributionChart data={filteredData} />
+                      </div>
+                    </Card>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Center content with toggles and globe vertically centered */}
+          <div className="flex-1 relative z-0 flex flex-col items-center justify-center px-3 sm:px-6 pb-28 gap-4">
+            <div className="flex items-center justify-between w-full max-w-3xl">
+              <button
+                className="flex items-center gap-2 px-3 py-2 bg-white/15 border border-white/25 rounded-lg text-white text-sm"
+                onClick={() => setShowFiltersDrawer(true)}
+              >
+                <FiFilter className="w-4 h-4" />
+                Filters
+              </button>
+              <button
+                className="flex items-center gap-2 px-3 py-2 bg-white/15 border border-white/25 rounded-lg text-white text-sm"
+                onClick={() => setShowChartsDrawer(true)}
+              >
+                <FiTrendingUp className="w-4 h-4" />
+                Charts
+              </button>
+            </div>
+
+            {!isLoading && (
+              <Suspense fallback={null}>
+                {globeFocused && (
+                  <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-sm" />
+                )}
+                {globeFocused && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGlobeFocused(false);
+                      if (resetCamera) {
+                        resetCamera();
+                      }
+                    }}
+                    className="absolute z-50 top-4 left-4 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 text-white text-sm backdrop-blur-md transition-colors"
+                  >
+                    Back to normal view
+                  </button>
+                )}
+                <div className={`relative w-full max-w-3xl aspect-[16/9] bg-black/20 rounded-2xl overflow-hidden ${globeFocused ? 'z-40 scale-105 md:scale-110' : 'z-10 scale-100'} transition-transform duration-300 ease-out pointer-events-auto sagar-main-globe`}>
+                  <ReactGlobeComponent
+                    dataPoints={filteredData}
+                    onDataPointClick={() => {}}
+                    onCameraDistanceChange={(d) => {
+                      const shouldFocus = d < 5.2;
+                      setGlobeFocused(prev => shouldFocus ? true : prev && shouldFocus);
+                    }}
+                    onResetCamera={(resetFunction) => {
+                      setResetCamera(() => resetFunction);
+                    }}
+                  />
+                </div>
+              </Suspense>
+            )}
+            {isLoading && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-cyan mx-auto mb-4"></div>
+                  <p className="text-gray-400">Loading Marine Data...</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom search bar */}
+          {!isLoading && (
+            <div className={`pointer-events-none absolute inset-x-0 bottom-2 sm:bottom-4 md:bottom-6 flex flex-col items-center z-20 transition-all gap-2 sm:gap-3 px-2 sm:px-0 ${globeFocused ? 'filter blur-md' : ''}`}>
+              <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 sm:gap-2 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg">
+                <span className="text-[10px] sm:text-xs text-white/70 mr-0.5 sm:mr-1">Data Types:</span>
+                {(['OCCURRENCE', 'CTD', 'AWS', 'ADCP'] as DataType[]).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      setSelectedDataTypes(prev => 
+                        prev.includes(type) 
+                          ? prev.filter(t => t !== type)
+                          : [...prev, type]
+                      );
+                    }}
+                    className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs transition-all ${
+                      selectedDataTypes.includes(type)
+                        ? 'bg-marine-cyan/50 border border-marine-cyan text-white font-medium'
+                        : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/15'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+                {selectedDataTypes.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDataTypes([])}
+                    className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs bg-white/10 border border-white/20 text-white/70 hover:bg-white/15"
+                    title="Clear selection (auto-detect)"
+                  >
+                    Clear
+                  </button>
+                )}
+                {selectedDataTypes.length === 0 && (
+                  <span className="text-[10px] sm:text-xs text-white/50 italic hidden sm:inline">(Auto-detect)</span>
+                )}
+              </div>
+
+              <form
+                onSubmit={(e) => { e.preventDefault(); handleAnalyze(); }}
+                className="pointer-events-auto w-full sm:w-[min(760px,94%)] bg-black/30 backdrop-blur-md border border-white/15 rounded-xl sm:rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.08)] p-1.5 sm:p-2 pl-2 sm:pl-4 flex items-center gap-2 sm:gap-3"
+              >
+                <input
+                  type="text"
+                  placeholder="Ask the Ocean..."
+                  className="flex-1 bg-transparent outline-none text-white placeholder-white/60 tracking-wide disabled:opacity-50 text-xs sm:text-sm"
                   value={analysisInput}
                   onChange={(e) => setAnalysisInput(e.target.value)}
-                  placeholder="Ask a question about the data... (e.g., 'What species are found in the Arabian Sea?', 'Show CTD temperature profiles', 'What are the current speeds in the Indian Ocean?')"
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm resize-none focus:border-marine-cyan focus:outline-none backdrop-blur-sm"
-                  rows={3}
+                  disabled={isAnalyzing}
                 />
-                <motion.button
-                  onClick={handleAnalyze}
+                <button
+                  type="submit"
                   disabled={isAnalyzing || !analysisInput.trim()}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-marine-cyan/30 to-marine-green/30 border border-marine-cyan/50 rounded-xl text-white hover:from-marine-cyan/40 hover:to-marine-green/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 backdrop-blur-sm"
-                  whileHover={{ scale: isAnalyzing ? 1 : 1.02 }}
-                  whileTap={{ scale: isAnalyzing ? 1 : 0.98 }}
+                  className="px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-white/10 border border-white/30 text-white hover:bg-white/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm"
                 >
                   {isAnalyzing ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-marine-cyan"></div>
-                      <span>Analyzing...</span>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="hidden sm:inline">Analyzing...</span>
                     </>
                   ) : (
-                    <>
-                      <FiSearch className="w-4 h-4" />
-                      <span>Analyze</span>
-                    </>
+                    <span>Analyze</span>
                   )}
-                </motion.button>
-                {/* Steps and Insight */}
-                <div className="text-xs text-white/70 space-y-1">
-                  {analysisSteps.map((s, i) => (<div key={i}>• {s}</div>))}
-                </div>
-                {insight && (
-                  <div className="p-3 bg-white/10 border border-white/20 rounded-xl text-sm text-white/90 backdrop-blur-sm">
-                    {insight}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Live Feed */}
-            <div>
-              <h4 className="text-sm font-medium text-white mb-3 flex items-center">
-                <FiActivity className="w-4 h-4 mr-2" />
-                Live Reactions
-              </h4>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {liveFeedData.map((item, index) => (
-                  <motion.div
-                    key={index}
-                    className="p-2 bg-white/10 border border-white/20 rounded-xl text-xs text-white/90 backdrop-blur-sm"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                  >
-                    {item}
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </motion.div>
-
-        {/* Full-area globe background */}
-        {!isLoading && (
-          <Suspense fallback={null}>
-            {/* Backdrop when focused */}
-            {globeFocused && (
-              <div 
-                className="absolute inset-0 z-30 bg-black/40 backdrop-blur-sm"
-              />
-            )}
-            {globeFocused && (
-              <button
-                type="button"
-                onClick={() => {
-                  setGlobeFocused(false);
-                  if (resetCamera) {
-                    resetCamera();
-                  }
-                }}
-                className="absolute z-50 top-4 left-4 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 border border-white/30 text-white text-sm backdrop-blur-md transition-colors"
-              >
-                Back to normal view
-              </button>
-            )}
-            <div
-              className={`absolute inset-0 bg-transparent ${globeFocused ? 'z-40 scale-110 md:scale-125' : 'z-0 scale-100'} transition-transform duration-300 ease-out pointer-events-auto sagar-main-globe`}
-            >
-              <ReactGlobeComponent
-                dataPoints={filteredData}
-                onDataPointClick={() => {}}
-                onCameraDistanceChange={(d) => {
-                  // Blur UI automatically when zoomed in close (smaller distance)
-                  const shouldFocus = d < 5.2; // threshold just beyond minDistance
-                  setGlobeFocused(prev => shouldFocus ? true : prev && shouldFocus);
-                }}
-                onResetCamera={(resetFunction) => {
-                  setResetCamera(() => resetFunction);
-                }}
-              />
-            </div>
-          </Suspense>
-        )}
-
-        {/* Center area keeps layout spacing; do not block pointer events to globe */}
-        <div className="flex-1 relative z-0 pointer-events-none">
-          {isLoading && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-cyan mx-auto mb-4"></div>
-                <p className="text-gray-400">Loading Marine Data...</p>
-              </div>
+                </button>
+              </form>
             </div>
           )}
-      </div>
-
-        {/* Bottom-centered search bar styled like the example; separate layer so globe stays interactive */}
-        {!isLoading && (
-          <div className={`pointer-events-none absolute inset-x-0 bottom-2 sm:bottom-4 md:bottom-6 flex flex-col items-center z-20 transition-all gap-2 sm:gap-3 px-2 sm:px-0 ${globeFocused ? 'filter blur-md' : ''}`}>
-            {/* Data Type Selector */}
-            <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 sm:gap-2 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2 shadow-lg">
-              <span className="text-[10px] sm:text-xs text-white/70 mr-0.5 sm:mr-1">Data Types:</span>
-              {(['OCCURRENCE', 'CTD', 'AWS', 'ADCP'] as DataType[]).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => {
-                    setSelectedDataTypes(prev => 
-                      prev.includes(type) 
-                        ? prev.filter(t => t !== type)
-                        : [...prev, type]
-                    );
-                  }}
-                  className={`px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs transition-all ${
-                    selectedDataTypes.includes(type)
-                      ? 'bg-marine-cyan/50 border border-marine-cyan text-white font-medium'
-                      : 'bg-white/10 border border-white/20 text-white/70 hover:bg-white/15'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-              {selectedDataTypes.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedDataTypes([])}
-                  className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-[10px] sm:text-xs bg-white/10 border border-white/20 text-white/70 hover:bg-white/15"
-                  title="Clear selection (auto-detect)"
-                >
-                  Clear
-                </button>
-              )}
-              {selectedDataTypes.length === 0 && (
-                <span className="text-[10px] sm:text-xs text-white/50 italic hidden sm:inline">(Auto-detect)</span>
-              )}
-            </div>
-
-            {/* Search Input Form */}
-            <form
-              onSubmit={(e) => { e.preventDefault(); handleAnalyze(); }}
-              className="pointer-events-auto w-full sm:w-[min(760px,94%)] bg-black/30 backdrop-blur-md border border-white/15 rounded-xl sm:rounded-2xl shadow-[0_0_0_1px_rgba(255,255,255,0.08)] p-1.5 sm:p-2 pl-2 sm:pl-4 flex items-center gap-2 sm:gap-3"
-            >
-              <input
-                type="text"
-                placeholder="Ask the Ocean..."
-                className="flex-1 bg-transparent outline-none text-white placeholder-white/60 tracking-wide disabled:opacity-50 text-xs sm:text-sm"
-                value={analysisInput}
-                onChange={(e) => setAnalysisInput(e.target.value)}
-                disabled={isAnalyzing}
-              />
-              <button
-                type="submit"
-                disabled={isAnalyzing || !analysisInput.trim()}
-                className="px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-white/10 border border-white/30 text-white hover:bg-white/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span className="hidden sm:inline">Analyzing...</span>
-                  </>
-                ) : (
-                  <span>Analyze</span>
-                )}
-              </button>
-            </form>
-          </div>
-        )}
-
-
-        {/* Right-side dataset info cards */}
-        {!isLoading && (
-          <aside className={`pointer-events-auto absolute right-2 sm:right-4 top-20 sm:top-24 z-30 flex flex-col gap-2 sm:gap-3 w-[calc(100vw-1rem)] sm:w-[280px] md:w-[300px] max-h-[60vh] sm:max-h-[70vh] overflow-y-auto scrollbar-hide transition-all ${globeFocused ? 'filter blur-md pointer-events-none' : ''} hidden lg:flex`}>
-            {/* Helper to compute simple metrics inline */}
-            {(() => {
-              const total = filteredData.length;
-              const uniqueSpeciesCount = new Set(filteredData.map(d => d.scientificName)).size;
-              const uniqueWaterBodiesCount = new Set(filteredData.map(d => d.waterBody).filter(Boolean)).size;
-              const dates = filteredData.map(d => new Date(d.eventDate).getTime()).filter(n => !isNaN(n));
-              const minDate = dates.length ? new Date(Math.min(...dates)).toLocaleDateString() : 'N/A';
-              const maxDate = dates.length ? new Date(Math.max(...dates)).toLocaleDateString() : 'N/A';
-              const depths = filteredData.map(d => [d.minimumDepthInMeters, d.maximumDepthInMeters]).flat().filter(n => typeof n === 'number' && !isNaN(n));
-              const minDepth = depths.length ? Math.min(...depths) : null;
-              const maxDepth = depths.length ? Math.max(...depths) : null;
-
-              return (
-                <>
-                  <Card className="pointer-events-auto">
-                    <CardTitle>Total Occurrences</CardTitle>
-                    <CardDescription className="text-2xl font-semibold tracking-wide text-marine-cyan">{total}</CardDescription>
-                    <div className="mt-3 h-24">
-                      <SpeciesDistributionChart data={filteredData} />
-                    </div>
-                  </Card>
-                  <Card className="pointer-events-auto">
-                    <CardTitle>Unique Species</CardTitle>
-                    <CardDescription className="text-2xl font-semibold tracking-wide text-marine-cyan">{uniqueSpeciesCount}</CardDescription>
-                    <div className="mt-3 h-24">
-                      <TopSpeciesChart data={filteredData} />
-                    </div>
-                  </Card>
-                  <Card className="pointer-events-auto">
-                    <CardTitle>Water Bodies Covered</CardTitle>
-                    <CardDescription className="text-2xl font-semibold tracking-wide text-marine-cyan">{uniqueWaterBodiesCount}</CardDescription>
-                    <div className="mt-3 h-24">
-                      <WaterBodyDistributionChart data={filteredData} />
-                    </div>
-                  </Card>
-                  <Card className="pointer-events-auto">
-                    <CardTitle>Date Range</CardTitle>
-                    <CardDescription className="text-white/80">{minDate} — {maxDate}</CardDescription>
-                    <div className="mt-3 h-24">
-                      <TemporalDistributionChart data={filteredData} />
-                    </div>
-                  </Card>
-                  <Card className="pointer-events-auto">
-                    <CardTitle>Depth Range</CardTitle>
-                    <CardDescription className="text-white/80">{minDepth !== null && maxDepth !== null ? `${minDepth}m — ${maxDepth}m` : 'N/A'}</CardDescription>
-                    <div className="mt-3 h-24">
-                      <DepthDistributionChart data={filteredData} />
-                    </div>
-                  </Card>
-                </>
-              );
-            })()}
-          </aside>
-        )}
-
-        {/* Hover Tooltip */}
-        {hoveredPoint && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
-            className="fixed z-[9999] pointer-events-none"
-            style={{
-              left: `${tooltipPosition.x + 10}px`,
-              top: `${tooltipPosition.y - 10}px`,
-              transform: 'translateX(-50%) translateY(-100%)'
-            }}
-          >
-            <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-lg p-4 shadow-2xl min-w-[280px]">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#0ea5e9' }}></div>
-                  <h4 className="text-sm font-semibold text-white">Location Details</h4>
-                </div>
-                
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Species:</span>
-                    <span className="text-gray-200">{hoveredPoint.scientificName || 'Unknown'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Locality:</span>
-                    <span className="text-gray-200">{hoveredPoint.locality || 'Unknown'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Coordinates:</span>
-                    <span className="text-gray-200">{hoveredPoint.decimalLatitude?.toFixed(4)}°, {hoveredPoint.decimalLongitude?.toFixed(4)}°</span>
-                  </div>
-                  {hoveredPoint.waterBody && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Water Body:</span>
-                      <span className="text-gray-200">{hoveredPoint.waterBody}</span>
-                    </div>
-                  )}
-                  {hoveredPoint.eventDate && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Date:</span>
-                      <span className="text-gray-200">{new Date(hoveredPoint.eventDate).toLocaleDateString()}</span>
-                    </div>
-                  )}
-                  {hoveredPoint.samplingProtocol && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Method:</span>
-                      <span className="text-gray-200">{hoveredPoint.samplingProtocol}</span>
-                    </div>
-                  )}
-                  {(hoveredPoint.minimumDepthInMeters || hoveredPoint.maximumDepthInMeters) && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Depth:</span>
-                      <span className="text-gray-200">
-                        {hoveredPoint.minimumDepthInMeters || '—'}m - {hoveredPoint.maximumDepthInMeters || '—'}m
-                      </span>
-                    </div>
-                  )}
-                  {hoveredPoint.identifiedBy && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Identified by:</span>
-                      <span className="text-gray-200">{hoveredPoint.identifiedBy}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </div>
+        </div>
       ) : activeMode === 'Visualise' ? (
         <VisualiseView allData={dataPoints} />
       ) : (
@@ -1876,7 +1866,7 @@ function VisualiseView({ allData }: VisualiseViewProps) {
   };
 
   return (
-    <div className="pt-16 sm:pt-20 min-h-screen relative flex flex-col lg:flex-row">
+    <div className="pt-28 sm:pt-24 min-h-screen relative flex flex-col lg:flex-row">
       {/* Starry Background - Same as Study Module */}
       <Suspense fallback={null}>
         <div className="absolute inset-0 z-0 pointer-events-none opacity-90">
@@ -3480,19 +3470,37 @@ function StudyView({ selectedProject }: { selectedProject: Project | null }) {
   const [tab, setTab] = useState<'Taxonomy' | 'Otolith' | 'eDNA' | 'Species identification' | 'Notes'>('Taxonomy');
   const [search, setSearch] = useState('');
   return (
-    <div className="pt-16 sm:pt-20 min-h-screen relative">
+    <div className="pt-28 sm:pt-24 min-h-screen relative overflow-x-hidden">
       <Suspense fallback={null}>
         <div className="absolute inset-0 z-0 pointer-events-none opacity-90">
           <ReactGlobeComponent dataPoints={[]} onDataPointClick={() => {}} onCameraDistanceChange={undefined} showStarsOnly />
         </div>
       </Suspense>
-      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4 overflow-x-auto pb-2">
+      <div className="relative z-10 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
+        {/* Mobile dropdown for tabs */}
+        <div className="sm:hidden mb-3">
+          <label className="text-xs text-white/70 block mb-1">Select module</label>
+          <select
+            value={tab}
+            onChange={(e) => setTab(e.target.value as typeof tab)}
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-marine-cyan"
+          >
+            {(['Taxonomy','Otolith','eDNA','Species identification','Notes'] as const).map(name => (
+              <option key={name} value={name} className="bg-marine-blue text-white">
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Desktop / tablet tab row */}
+        <div className="hidden sm:flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4 overflow-x-auto pb-2 w-full">
           {(['Taxonomy','Otolith','eDNA','Species identification','Notes'] as const).map(name => (
-            <button key={name} onClick={() => setTab(name)} className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border text-xs sm:text-sm whitespace-nowrap ${tab===name ? 'border-white/40 bg-white/10 text-white' : 'border-white/20 text-white/80 hover:bg-white/10'}`}>{name}</button>
+            <button key={name} onClick={() => setTab(name)} className={`px-3 md:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border text-sm whitespace-nowrap ${tab===name ? 'border-white/40 bg-white/10 text-white' : 'border-white/20 text-white/80 hover:bg-white/10'}`}>{name}</button>
           ))}
           <div className="flex-1" />
         </div>
+
         <div className="bg-black/30 backdrop-blur-md border border-white/15 rounded-lg sm:rounded-2xl p-3 sm:p-4 md:p-6">
           {tab === 'Taxonomy' && <TaxonomyModule globalSearch={search} />}
           {tab === 'Otolith' && <OtolithModule globalSearch={search} />}
@@ -3603,7 +3611,7 @@ function TaxonomyModule({ globalSearch }: { globalSearch: string }) {
   }, [selected]);
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mb-3">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -3614,7 +3622,7 @@ function TaxonomyModule({ globalSearch }: { globalSearch: string }) {
             }
           }}
           placeholder="Enter scientific name and press Enter..."
-          className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm focus:border-marine-cyan focus:outline-none"
+          className="w-full sm:flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm focus:border-marine-cyan focus:outline-none"
         />
         <button 
           onClick={() => {
@@ -3623,12 +3631,12 @@ function TaxonomyModule({ globalSearch }: { globalSearch: string }) {
               setQuery('');
             }
           }}
-          className="px-4 py-2 bg-marine-cyan/20 border border-marine-cyan/40 rounded-xl text-white text-sm hover:bg-marine-cyan/30"
+          className="w-full sm:w-auto px-4 py-2 bg-marine-cyan/20 border border-marine-cyan/40 rounded-xl text-white text-sm hover:bg-marine-cyan/30"
         >
           Search
               </button>
-        <button onClick={()=>{ setQuery(''); setPath(['Animalia']); setSelected(null); }} className="px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm">Reset</button>
-        <button onClick={()=>setFavorites([])} className="px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm">Clear favorites</button>
+        <button onClick={()=>{ setQuery(''); setPath(['Animalia']); setSelected(null); }} className="w-full sm:w-auto px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm">Reset</button>
+        <button onClick={()=>setFavorites([])} className="w-full sm:w-auto px-3 py-2 bg-white/10 border border-white/20 rounded-xl text-white text-sm">Clear favorites</button>
           </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left column - Taxonomic Lineage (narrower) */}
